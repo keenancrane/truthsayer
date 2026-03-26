@@ -87,7 +87,7 @@ Truthsayer organizes its output into **10 sections**, each covering a different 
 | Section | What it shows |
 |---|---|
 | **overview** | File name, format (GLB/GLTF), size, glTF version, generator, copyright, and a summary grid of object counts across all categories. |
-| **scene** | The full scene graph as a tree — scenes, nodes, child hierarchies, with inline display of transforms (translation ↹, rotation ↻, scale ⇔, matrix ⊞) and references to meshes ⯈, cameras ◎, and skins ◈. |
+| **scene** | The full scene graph as a tree — scenes, nodes, child hierarchies, with inline display of transforms (translation, rotation, scale, matrix) and references to meshes, cameras, and skins. |
 | **meshes** | Each mesh and its primitives: rendering mode, material reference, vertex count, per-attribute accessor bindings (type, component type, bounding range), index counts, and morph targets. |
 | **materials** | PBR metallic-roughness parameters (base color, metallic/roughness factors, textures), normal/occlusion/emissive maps, alpha mode, double-sidedness, and per-material extensions. |
 | **textures** | Three linked tables: Textures (sampler + image index), Samplers (mag/min filters, wrap modes), and Images (MIME type, source URI or buffer view with size). |
