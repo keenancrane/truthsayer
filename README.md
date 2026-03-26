@@ -1,15 +1,11 @@
-# Truthsayer
+# truthsayer
 
 <p align="center">
   <img src="icon.png" alt="Truthsayer" width="512">
 </p>
 
 <p align="center">
-  <em>From time to time, your mesh editor lies to you about the contents of a glTF file.  For those times, there's <tt>truthsayer</tt>.</em>
-</p>
-
-<p align="center">
-  <code>pip install truthsayer</code>
+  <em>From time to time, your mesh editor lies to you about the contents of a glTF file.<br/>For those times, there's <tt>truthsayer</tt>.</em>
 </p>
 
 ---
@@ -20,12 +16,7 @@ Many programs (Blender, MeshLab, etc.) will create data on load if it doesn't ex
 
 ## Quick Start
 
-```bash
-pip install truthsayer
-truthsayer model.glb
-```
-
-Or run directly from source:
+After cloning the repo, run these commands to install `truthsayer`:
 
 ```bash
 git clone https://github.com/your-org/truthsayer.git
@@ -36,7 +27,7 @@ truthsayer path/to/model.glb
 
 ## Example Output
 
-Running `truthsayer DamagedHelmet.glb --compact` produces:
+Running `truthsayer DamagedHelmet.glb --compact` on a GLB file `DamagedHelmet.glb` now produces:
 
 ```
   TRUTHSAYER — glTF / GLB Inspector
@@ -96,7 +87,7 @@ Truthsayer organizes its output into **10 sections**, each covering a different 
 | Section | What it shows |
 |---|---|
 | **overview** | File name, format (GLB/GLTF), size, glTF version, generator, copyright, and a summary grid of object counts across all categories. |
-| **scene** | The full scene graph as a tree — scenes, nodes, child hierarchies, with inline display of transforms (translation ↹, rotation ↻, scale ⇔, matrix ⊞) and references to meshes ⯈, cameras ◎, and skins ◈. |
+| **scene** | The full scene graph as a tree — scenes, nodes, child hierarchies, with inline display of transforms (translation, rotation, scale, matrix) and references to meshes, cameras, and skins. |
 | **meshes** | Each mesh and its primitives: rendering mode, material reference, vertex count, per-attribute accessor bindings (type, component type, bounding range), index counts, and morph targets. |
 | **materials** | PBR metallic-roughness parameters (base color, metallic/roughness factors, textures), normal/occlusion/emissive maps, alpha mode, double-sidedness, and per-material extensions. |
 | **textures** | Three linked tables: Textures (sampler + image index), Samplers (mag/min filters, wrap modes), and Images (MIME type, source URI or buffer view with size). |
