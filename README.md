@@ -1,11 +1,11 @@
-# Truthsayer
+# truthsayer
 
 <p align="center">
   <img src="icon.png" alt="Truthsayer" width="512">
 </p>
 
 <p align="center">
-  <em>From time to time, your mesh editor lies to you about the contents of a glTF file.  For those times, there's <tt>truthsayer</tt>.</em>
+  <em>From time to time, your mesh editor lies to you about the contents of a glTF file.<br/>For those times, there's <tt>truthsayer</tt>.</em>
 </p>
 
 <p align="center">
