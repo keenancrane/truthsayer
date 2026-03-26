@@ -8,10 +8,6 @@
   <em>From time to time, your mesh editor lies to you about the contents of a glTF file.<br/>For those times, there's <tt>truthsayer</tt>.</em>
 </p>
 
-<p align="center">
-  <code>pip install truthsayer</code>
-</p>
-
 ---
 
 `truthsayer` is a command line utility that opens a glTF or GLB file and tells you everything about it — scene hierarchy, meshes, materials, textures, animations, skins, cameras, buffer layouts, and extensions — without modifying or recomputing any attributes.  You can ask for specific information (e.g., just the cameras), or simply dump everything that is known about the file.  Information is displayed directly on the command line, using rich formatting.
@@ -20,12 +16,7 @@ Many programs (Blender, MeshLab, etc.) will create data on load if it doesn't ex
 
 ## Quick Start
 
-```bash
-pip install truthsayer
-truthsayer model.glb
-```
-
-Or run directly from source:
+After cloning the repo, run these commands to install `truthsayer`:
 
 ```bash
 git clone https://github.com/your-org/truthsayer.git
@@ -36,7 +27,7 @@ truthsayer path/to/model.glb
 
 ## Example Output
 
-Running `truthsayer DamagedHelmet.glb --compact` produces:
+Running `truthsayer DamagedHelmet.glb --compact` on a GLB file `DamagedHelmet.glb` now produces:
 
 ```
   TRUTHSAYER — glTF / GLB Inspector
