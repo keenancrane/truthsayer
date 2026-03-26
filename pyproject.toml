@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "truthsayer"
+version = "0.1.0"
+description = "A beautiful CLI inspector for glTF/GLB files"
+requires-python = ">=3.9"
+dependencies = [
+    "pygltflib",
+    "rich",
+]
+
+[project.scripts]
+truthsayer = "truthsayer.cli:main"
