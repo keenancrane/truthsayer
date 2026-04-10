@@ -6,7 +6,10 @@ to the console.  The kwargs always include filepath, file_size, and compact.
 
 from __future__ import annotations
 
+import base64
+import io
 import os
+import struct
 from typing import Any
 
 from pygltflib import GLTF2
@@ -444,6 +447,73 @@ def render_materials(gltf: GLTF2, console: Console, **kw):
 #  5. Textures, Samplers & Images
 # ═══════════════════════════════════════════════════════════════
 
+def _parse_png_size(data: bytes) -> tuple[int, int] | None:
+    """Read width and height from a PNG IHDR chunk."""
+    if len(data) < 24 or data[:8] != b"\x89PNG\r\n\x1a\n":
+        return None
+    w, h = struct.unpack(">II", data[16:24])
+    return w, h
+
+
+def _parse_jpeg_size(data: bytes) -> tuple[int, int] | None:
+    """Scan JPEG markers for SOFn to extract dimensions."""
+    if len(data) < 2 or data[0:2] != b"\xff\xd8":
+        return None
+    pos = 2
+    while pos < len(data) - 1:
+        if data[pos] != 0xFF:
+            return None
+        marker = data[pos + 1]
+        if marker == 0xD9:  # EOI
+            return None
+        if marker in (0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0x01):
+            pos += 2
+            continue
+        if pos + 3 >= len(data):
+            return None
+        seg_len = struct.unpack(">H", data[pos + 2 : pos + 4])[0]
+        # SOF0..SOF3, SOF5..SOF7, SOF9..SOF11, SOF13..SOF15
+        if marker in (0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7,
+                       0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF):
+            if pos + 9 < len(data):
+                h, w = struct.unpack(">HH", data[pos + 5 : pos + 9])
+                return w, h
+            return None
+        pos += 2 + seg_len
+    return None
+
+
+def _get_image_bytes(gltf: GLTF2, img, filepath: str) -> bytes | None:
+    """Extract raw image bytes from a glTF image object."""
+    if img.bufferView is not None:
+        blob = gltf.binary_blob()
+        if blob is None:
+            return None
+        bv = gltf.bufferViews[img.bufferView]
+        return bytes(blob[bv.byteOffset : bv.byteOffset + bv.byteLength])
+    if img.uri:
+        uri = img.uri
+        if uri.startswith("data:"):
+            _, encoded = uri.split(",", 1)
+            return base64.b64decode(encoded)
+        img_path = os.path.join(os.path.dirname(filepath), uri)
+        if os.path.isfile(img_path):
+            with open(img_path, "rb") as f:
+                return f.read(32)  # only need the header
+    return None
+
+
+def _get_image_resolution(gltf: GLTF2, img, filepath: str) -> tuple[int, int] | None:
+    """Return (width, height) for a glTF image, or None."""
+    data = _get_image_bytes(gltf, img, filepath)
+    if data is None:
+        return None
+    result = _parse_png_size(data)
+    if result:
+        return result
+    return _parse_jpeg_size(data)
+
+
 def render_textures(gltf: GLTF2, console: Console, **kw):
     compact = kw.get("compact", False)
     has_any = gltf.textures or gltf.samplers or gltf.images
@@ -498,12 +568,14 @@ def render_textures(gltf: GLTF2, console: Console, **kw):
 
     # ── Images table ──
     if gltf.images:
+        filepath = kw.get("filepath", "")
         table = Table(
             title="Images", title_style="bold", border_style="dim",
             show_lines=False, pad_edge=True, padding=(0, 1),
         )
         table.add_column("Image", style=STYLE_INDEX, justify="right")
         table.add_column("Name", style=STYLE_NAME)
+        table.add_column("Resolution", justify="right")
         table.add_column("MIME Type", style=STYLE_TYPE)
         table.add_column("Source")
 
@@ -519,9 +591,13 @@ def render_textures(gltf: GLTF2, console: Console, **kw):
                 else:
                     source = uri
 
+            res = _get_image_resolution(gltf, img, filepath)
+            res_str = f"{res[0]}×{res[1]}" if res else "—"
+
             table.add_row(
                 str(ii),
                 img.name or "—",
+                res_str,
                 img.mimeType or "—",
                 source,
             )
