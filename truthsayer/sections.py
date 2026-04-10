@@ -280,10 +280,31 @@ def render_meshes(gltf: GLTF2, console: Console, **kw):
         return
 
     for mi, mesh in enumerate(gltf.meshes):
-        mesh_tree = make_tree(index_name(mi, mesh.name, prefix="Mesh"))
+        mesh_lbl = index_name(mi, mesh.name, prefix="Mesh")
+        mesh_total_tris = 0
+        mesh_tree = make_tree(mesh_lbl)
 
         for pi, prim in enumerate(mesh.primitives):
-            mode_name = PRIMITIVE_MODE.get(prim.mode, PRIMITIVE_MODE.get(4, "TRIANGLES")) if prim.mode is not None else "TRIANGLES"
+            mode = prim.mode if prim.mode is not None else 4
+            mode_name = PRIMITIVE_MODE.get(mode, PRIMITIVE_MODE.get(4, "TRIANGLES"))
+
+            # Element count: index count if indexed, else vertex count
+            elem_count = 0
+            if prim.indices is not None:
+                elem_count = gltf.accessors[prim.indices].count
+            else:
+                pos_idx = getattr(prim.attributes, "POSITION", None)
+                if pos_idx is not None and pos_idx < len(gltf.accessors):
+                    elem_count = gltf.accessors[pos_idx].count
+
+            tri_count = 0
+            if mode == 4:       # TRIANGLES
+                tri_count = elem_count // 3
+            elif mode == 5:     # TRIANGLE_STRIP
+                tri_count = max(0, elem_count - 2)
+            elif mode == 6:     # TRIANGLE_FAN
+                tri_count = max(0, elem_count - 2)
+            mesh_total_tris += tri_count
 
             prim_lbl = Text()
             prim_lbl.append(f"Primitive {pi}", style=STYLE_DIM)
@@ -304,6 +325,10 @@ def render_meshes(gltf: GLTF2, console: Console, **kw):
                 count = gltf.accessors[pos_idx].count
                 prim_lbl.append(" ▸ ", style=STYLE_DIM)
                 prim_lbl.append(f"{count:,} vertices", style=STYLE_VALUE)
+
+            if tri_count > 0:
+                prim_lbl.append(" ▸ ", style=STYLE_DIM)
+                prim_lbl.append(f"{tri_count:,} triangles", style=STYLE_VALUE)
 
             prim_tree = mesh_tree.add(prim_lbl)
 
@@ -363,6 +388,11 @@ def render_meshes(gltf: GLTF2, console: Console, **kw):
         weights = mesh.weights or []
         if weights:
             mesh_tree.add(label_value("Weights", format_vector(weights)))
+
+        # Mesh-level triangle total (useful when there are multiple primitives)
+        if mesh_total_tris > 0 and len(mesh.primitives) > 1:
+            mesh_lbl.append(" ▸ ", style=STYLE_DIM)
+            mesh_lbl.append(f"{mesh_total_tris:,} triangles total", style=STYLE_VALUE)
 
         console.print(mesh_tree)
 
