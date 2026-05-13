@@ -1,0 +1,91 @@
+{
+  "name": "truthsayer",
+  "displayName": "Truthsayer — glTF / GLB Inspector",
+  "description": "Open .glb and .gltf files and see exactly what's in them — scenes, meshes, materials, textures, animations, skins, cameras, buffers, extensions — without your mesh editor lying to you.",
+  "version": "0.3.3",
+  "publisher": "kcrane",
+  "license": "MIT",
+  "icon": "media/icon.png",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Visualization",
+    "Other"
+  ],
+  "keywords": [
+    "gltf",
+    "glb",
+    "3d",
+    "mesh",
+    "inspector",
+    "khronos"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "truthsayer.gltfInspector",
+        "displayName": "Truthsayer Inspector",
+        "selector": [
+          {
+            "filenamePattern": "*.glb"
+          },
+          {
+            "filenamePattern": "*.gltf"
+          }
+        ],
+        "priority": "default"
+      }
+    ],
+    "commands": [
+      {
+        "command": "truthsayer.inspectActiveFile",
+        "title": "Truthsayer: Inspect Active glTF/GLB File"
+      },
+      {
+        "command": "truthsayer.openWithDefault",
+        "title": "Truthsayer: Reopen With Default Editor"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "truthsayer.inspectActiveFile",
+          "when": "resourceExtname == .glb || resourceExtname == .gltf",
+          "group": "navigation@50"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Truthsayer",
+      "properties": {
+        "truthsayer.autoLoad3DMaxMB": {
+          "type": "number",
+          "default": 50,
+          "minimum": 0,
+          "description": "Auto-load the 3D viewport for files up to this size (MB). Larger files show a 'Load 3D model' button instead, to keep open-time fast on remote workspaces."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "clean": "rm -rf out",
+    "vscode:prepublish": "rm -rf out && node esbuild.js --production",
+    "package": "vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/three": "^0.184.1",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "three": "^0.184.0"
+  }
+}
