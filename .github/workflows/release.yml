@@ -1,0 +1,109 @@
+name: Release VS Code extension
+
+# Triggers on either:
+#   1. A pushed tag matching v*  (e.g. `git tag v0.3.4 && git push --tags`)
+#   2. The "Run workflow" button in the Actions tab (workflow_dispatch)
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      draft:
+        description: "Create the release as a draft"
+        type: boolean
+        default: false
+      prerelease:
+        description: "Mark the release as a pre-release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write   # required for `gh release create` to upload assets
+
+jobs:
+  release:
+    name: Build, package, and publish to GitHub Releases
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Determine version
+        id: ver
+        # When triggered by a tag push, GITHUB_REF_NAME is the tag (e.g. "v0.3.4").
+        # When triggered manually, fall back to the package.json version with a "v" prefix.
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME:-}"
+          pkg_ver=$(node -p "require('./package.json').version")
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            tag_ver="${tag#v}"
+            if [[ "$tag_ver" != "$pkg_ver" ]]; then
+              echo "::error::Tag $tag does not match package.json version $pkg_ver"
+              exit 1
+            fi
+            echo "tag=$tag"     >> "$GITHUB_OUTPUT"
+            echo "version=$pkg_ver" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=v$pkg_ver" >> "$GITHUB_OUTPUT"
+            echo "version=$pkg_ver" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Package VSIX
+        run: |
+          rm -f truthsayer-*.vsix
+          npx --yes @vscode/vsce package \
+            --no-dependencies \
+            --baseContentUrl . \
+            --allow-missing-repository
+
+      - name: Locate VSIX
+        id: vsix
+        run: |
+          set -euo pipefail
+          file="$(ls truthsayer-*.vsix | head -n1)"
+          [[ -f "$file" ]] || { echo "::error::No .vsix produced"; exit 1; }
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+          echo "path=extension/$file" >> "$GITHUB_OUTPUT"
+          ls -la "$file"
+
+      # If the tag-triggered run is for a tag that already has a release,
+      # the upload would fail; in that case we fall through to "upload assets".
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRAFT_FLAG: ${{ (github.event_name == 'workflow_dispatch' && inputs.draft) && '--draft' || '' }}
+          PRERELEASE_FLAG: ${{ ((github.event_name == 'workflow_dispatch' && inputs.prerelease) || contains(steps.ver.outputs.tag, '-')) && '--prerelease' || '' }}
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          tag="${{ steps.ver.outputs.tag }}"
+          file="${{ steps.vsix.outputs.path }}"
+          title="Truthsayer ${tag}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag already exists; uploading asset (will replace if duplicate)."
+            gh release upload "$tag" "$file" --clobber
+          else
+            gh release create "$tag" "$file" \
+              --title "$title" \
+              --generate-notes \
+              $DRAFT_FLAG $PRERELEASE_FLAG
+          fi

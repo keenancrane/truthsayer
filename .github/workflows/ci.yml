@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "extension/**"
+      - ".github/workflows/ci.yml"
+  pull_request:
+    paths:
+      - "extension/**"
+      - ".github/workflows/ci.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Type-check, build, and package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: extension
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: extension/package-lock.json
+
+      - run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build (production)
+        run: node esbuild.js --production
+
+      - name: Package VSIX (sanity check)
+        run: |
+          npx --yes @vscode/vsce package \
+            --no-dependencies \
+            --baseContentUrl . \
+            --allow-missing-repository
+
+      - name: Upload VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: truthsayer-vsix-${{ github.sha }}
+          path: extension/truthsayer-*.vsix
+          if-no-files-found: error
+          retention-days: 14
